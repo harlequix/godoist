@@ -1,4 +1,4 @@
-package internal
+package godoist
 
 import (
 	"encoding/json"

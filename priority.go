@@ -1,4 +1,4 @@
-package internal
+package godoist
 
 type PRIORITY_LEVEL int
 
