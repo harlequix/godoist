@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -150,7 +151,7 @@ func (t *Task) RemoveLabel(label string) error {
 	return fmt.Errorf("label not found: %s", label)
 }
 
-func (t *Task) Update(key string, value interface{}) {
+func (t *Task) Update(key string, value interface{}) error {
 	switch key {
 	case "content", "Content":
 		t.Content = value.(string)
@@ -172,6 +173,8 @@ func (t *Task) Update(key string, value interface{}) {
 		t.Labels = value.([]string)
 	default:
 		t.manager.api.logger.Error("Unknown/unsupported Update", "Command", key, "Task", t)
+		return errors.New("unknown/unsupported Update")
 	}
 	t.manager.api.update("item_update", map[string]interface{}{"id": t.ID, key: value})
+	return nil
 }
