@@ -93,7 +93,7 @@ func (t *TodoistAPI) Commit() error {
 	if resp.StatusCode != 200 {
 		t.logger.Error("Error: " + str)
 	}
-	t.logger.Info("Success: " + str)
+	t.logger.Debug("Success: " + str)
 	t.backlog = t.backlog[:0]
 	return nil
 
