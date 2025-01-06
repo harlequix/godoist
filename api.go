@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/k0kubun/pp"
 )
 
 var (
@@ -61,13 +60,14 @@ func NewDispatcher(token string) *TodoistAPI {
 }
 
 func (t *TodoistAPI) Commit() error {
+	if len(t.backlog) == 0 {
+		return nil
+	}
 	form := url.Values{}
 	commands, err := json.Marshal(t.backlog)
 	if err != nil {
 		return err
 	}
-	pp.Println(t.backlog)
-	// pp.Println(commands)
 	form.Add("commands", string(commands))
 	req, err := http.NewRequest("POST", APIURL, strings.NewReader(form.Encode()))
 	if err != nil {
@@ -84,18 +84,17 @@ func (t *TodoistAPI) Commit() error {
 		return err
 	}
 	defer resp.Body.Close()
-	bodyBytes, err := io.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	if err != nil {
 		t.logger.Error(err.Error())
 		return err
 	}
-	pp.Println(string(bodyBytes))
 	str := resp.Status
 	if resp.StatusCode != 200 {
 		t.logger.Error("Error: " + str)
 	}
 	t.logger.Info("Success: " + str)
-	t.backlog = nil
+	t.backlog = t.backlog[:0]
 	return nil
 
 }
@@ -151,14 +150,6 @@ func (t *TodoistAPI) Sync() (*Response, error) {
 		return nil, err
 	}
 	t.synctoken = response.SyncToken
-	pp.Print(response)
-	// pp.Println(jsonResponse)
-	for _, item := range jsonResponse["items"].([]interface{}) {
-		task := item.(map[string]interface{})
-		if task["due"] != nil {
-			pp.Println(task)
-		}
-		// pp.Println(task)
-	}
+
 	return &response, nil
 }

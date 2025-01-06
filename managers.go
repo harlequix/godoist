@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/k0kubun/pp"
 )
 
 type Manager struct {
@@ -86,12 +85,10 @@ func (t *TaskManager) AddTask(task Task) error {
 		if err := json.Unmarshal(taskJSON, &taskMap); err != nil {
 			return err
 		}
-		pp.Println(taskMap)
-		data, err := json.Marshal(task)
+		_, err = json.Marshal(task)
 		if err != nil {
 			return err
 		}
-		pp.Println(string(data))
 		t.api.create("item_add", cleanRequests(taskMap), task.TempID)
 	}
 	t.tasks[task.ID] = &task

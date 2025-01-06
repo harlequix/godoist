@@ -35,7 +35,6 @@ func (d *Due) UnmarshalJSON(data []byte) error {
 	}
 
 	if d.Date != "" {
-		fmt.Print(d.Date)
 		parsedDate, err := time.Parse("2006-01-02T15:04:05", d.Date)
 		if err != nil {
 			parsedDate, err := time.Parse("2006-01-02", d.Date)
@@ -64,7 +63,6 @@ func (d *Deadline) UnmarshalJSON(data []byte) error {
 	}
 
 	if d.Date != "" {
-		fmt.Print(d.Date)
 		parsedDate, err := time.Parse("2006-01-02", d.Date)
 		if err != nil {
 			return err
