@@ -78,7 +78,7 @@ type Task struct {
 	Content   string         `json:"content"`
 	ProjectID string         `json:"project_id"`
 	SectionID string         `json:"section_id"`
-	Order     int            `json:"order"`
+	Order     int            `json:"child_order"`
 	Priority  PRIORITY_LEVEL `json:"priority"`
 	Deadline  *Deadline      `json:"deadline"`
 	Due       *Due           `json:"due"`
