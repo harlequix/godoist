@@ -65,7 +65,11 @@ func (d *Deadline) UnmarshalJSON(data []byte) error {
 	if d.Date != "" {
 		parsedDate, err := time.Parse("2006-01-02", d.Date)
 		if err != nil {
-			return err
+			parsedDate, err := time.Parse("2006-01-02T15:04:05", d.Date)
+			if err != nil {
+
+				return err
+			}
 		}
 		d.ParsedDate = parsedDate
 	}

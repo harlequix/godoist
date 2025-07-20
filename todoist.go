@@ -5,12 +5,28 @@ import (
 	"os"
 )
 
+type TaskManagerInterface interface {
+    AddTask(task Task) error
+    UpdateTask(task Task)
+    Get(id string) *Task
+    GetByName(name string) []*Task
+    All() []*Task
+}
+
+type ProjectManagerInterface interface {
+    AddProject(project Project)
+    Update(projects []Project)
+    Get(id string) *Project
+    GetByName(name string) []*Project
+    All() []*Project
+}
+
 type Todoist struct {
 	Token    string
 	logger   *slog.Logger
 	API      *TodoistAPI
-	Tasks    TaskManager
-	Projects ProjectManager
+	Tasks    TaskManagerInterface
+	Projects ProjectManagerInterface
 }
 
 // NewTodoist creates a new Todoist client
@@ -19,12 +35,15 @@ func NewTodoist(token string) *Todoist {
 	aux := &Todoist{Token: token, logger: logger, API: NewDispatcher(token)}
 	manager := Manager{}
 
-	aux.Tasks = *NewTaskManager(aux.API)
-	aux.Projects = *NewProjectManager(aux.API)
-	manager.Tasks = &aux.Tasks
-	manager.Projects = &aux.Projects
-	aux.Tasks.Manager = &manager
-	aux.Projects.Manager = &manager
+	taskManager := NewTaskManager(aux.API)
+	projectManager := NewProjectManager(aux.API)
+	manager.Tasks = taskManager
+    manager.Projects = projectManager
+    taskManager.Manager = &manager
+    projectManager.Manager = &manager
+
+    aux.Tasks = taskManager
+    aux.Projects = projectManager
 	return aux
 }
 
@@ -34,7 +53,9 @@ func (t *Todoist) Sync() error {
 		t.logger.Error(err.Error())
 		return err
 	}
-	t.Tasks.Update(response.Tasks)
+	for _, task := range response.Tasks {
+		t.Tasks.AddTask(task)
+	}
 	t.Projects.Update(response.Projects)
 
 	return nil
