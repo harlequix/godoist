@@ -74,18 +74,21 @@ func (d *Deadline) UnmarshalJSON(data []byte) error {
 }
 
 type Task struct {
-	ID        string         `json:"id"`
-	Content   string         `json:"content"`
-	ProjectID string         `json:"project_id"`
-	SectionID string         `json:"section_id"`
-	Order     int            `json:"child_order"`
-	Priority  PRIORITY_LEVEL `json:"priority"`
-	Deadline  *Deadline      `json:"deadline"`
-	Due       *Due           `json:"due"`
-	ParentID  string         `json:"parent_id"`
-	Labels    []string       `json:"labels"`
-	manager   *TaskManager   `json:"-"`
-	TempID    string         `json:"-"`
+	ID          string         `json:"id"`
+	Content     string         `json:"content"`
+	Description string         `json:"description"`
+	ProjectID   string         `json:"project_id"`
+	SectionID   string         `json:"section_id"`
+	Order       int            `json:"order"`
+	Priority    PRIORITY_LEVEL `json:"priority"`
+	Deadline    *Deadline      `json:"deadline"`
+	Due         *Due           `json:"due"`
+	ParentID    string         `json:"parent_id"`
+	Labels      []string       `json:"labels"`
+	IsCompleted bool           `json:"is_completed"`
+	CreatedAt   string         `json:"created_at"`
+	URL         string         `json:"url"`
+	manager     *TaskManager   `json:"-"`
 }
 
 func (t *Task) UnmarshalJSON(data []byte) error {
@@ -153,6 +156,8 @@ func (t *Task) Update(key string, value interface{}) error {
 	switch key {
 	case "content", "Content":
 		t.Content = value.(string)
+	case "description", "Description":
+		t.Description = value.(string)
 	case "project_id", "ProjectID":
 		t.ProjectID = value.(string)
 	case "section_id", "SectionID":
@@ -173,6 +178,9 @@ func (t *Task) Update(key string, value interface{}) error {
 		t.manager.api.logger.Error("Unknown/unsupported Update", "Command", key, "Task", t)
 		return errors.New("unknown/unsupported Update")
 	}
-	t.manager.api.update("item_update", map[string]interface{}{"id": t.ID, key: value})
-	return nil
+	return t.manager.api.UpdateTask(t.ID, map[string]interface{}{key: value})
+}
+
+func (t *Task) Close() error {
+	return t.manager.api.CloseTask(t.ID)
 }

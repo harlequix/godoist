@@ -3,15 +3,19 @@ package godoist
 import "errors"
 
 type Project struct {
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Color       string          `json:"color"`
-	ParentID    string          `json:"parent_id"`
-	ChildOrder  int             `json:"child_order"`
-	Shared      bool            `json:"shared"`
-	ViewStyle   string          `json:"view_style"`
-	Manager     *ProjectManager `json:"-"`
+	ID             string          `json:"id"`
+	Name           string          `json:"name"`
+	Description    string          `json:"description"`
+	Color          string          `json:"color"`
+	ParentID       string          `json:"parent_id"`
+	Order          int             `json:"order"`
+	IsShared       bool            `json:"is_shared"`
+	IsInboxProject bool            `json:"is_inbox_project"`
+	IsFavorite     bool            `json:"is_favorite"`
+	URL            string          `json:"url"`
+	CommentCount   int             `json:"comment_count"`
+	ViewStyle      string          `json:"view_style"`
+	Manager        *ProjectManager `json:"-"`
 }
 
 func (p *Project) Update(key string, value interface{}) error {
@@ -25,8 +29,7 @@ func (p *Project) Update(key string, value interface{}) error {
 	default:
 		return errors.New("unknown/unsupported Update")
 	}
-	p.Manager.api.update("project_update", map[string]interface{}{"id": p.ID, key: value})
-	return nil
+	return p.Manager.api.UpdateProject(p.ID, map[string]interface{}{key: value})
 }
 
 func (p *Project) GetTasks() []*Task {

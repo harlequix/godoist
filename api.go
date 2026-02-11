@@ -1,156 +1,145 @@
 package godoist
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
-
-	"github.com/google/uuid"
 )
 
 var (
-	APIURL = "https://api.todoist.com/sync/v9/sync"
+	APIURL = "https://api.todoist.com/rest/v2"
 )
 
-type Request struct {
-	Type   string                 `json:"type"`
-	UUID   string                 `json:"uuid"`
-	TempID string                 `json:"temp_id"`
-	Args   map[string]interface{} `json:"args"`
-}
-
-func (r Request) MarshalJSON() ([]byte, error) {
-	if r.TempID == "" {
-		return json.Marshal(map[string]interface{}{
-			"type": r.Type,
-			"uuid": r.UUID,
-			"args": r.Args,
-		})
-	} else {
-		return json.Marshal(map[string]interface{}{
-			"type":    r.Type,
-			"uuid":    r.UUID,
-			"args":    r.Args,
-			"temp_id": r.TempID,
-		})
-	}
-}
-
 type TodoistAPI struct {
-	Token     string
-	logger    *slog.Logger
-	synctoken string
-	backlog   []Request
+	Token  string
+	logger *slog.Logger
 }
 
-type Response struct {
-	SyncToken string    `json:"sync_token"`
-	Tasks     []Task    `json:"items"`
-	Projects  []Project `json:"projects"`
-}
-
-// NewTodoist creates a new Todoist client
+// NewDispatcher creates a new Todoist API client
 func NewDispatcher(token string) *TodoistAPI {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	return &TodoistAPI{Token: token, logger: logger, synctoken: "*"}
+	return &TodoistAPI{Token: token, logger: logger}
 }
 
-func (t *TodoistAPI) Commit() error {
-	if len(t.backlog) == 0 {
-		return nil
-	}
-	form := url.Values{}
-	commands, err := json.Marshal(t.backlog)
+func (t *TodoistAPI) doGet(path string, result interface{}) error {
+	req, err := http.NewRequest("GET", APIURL+path, nil)
 	if err != nil {
 		return err
 	}
-	form.Add("commands", string(commands))
-	req, err := http.NewRequest("POST", APIURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		t.logger.Error(err.Error())
-		return err
-	}
-
-	req.Header.Add("Authorization", "Bearer "+t.Token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", "Bearer "+t.Token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.logger.Error(err.Error())
 		return err
 	}
 	defer resp.Body.Close()
-	_, err = io.ReadAll(resp.Body)
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		t.logger.Error(err.Error())
 		return err
 	}
-	str := resp.Status
-	if resp.StatusCode != 200 {
-		t.logger.Error("Error: " + str)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("API error %s: %s", resp.Status, string(body))
 	}
-	t.logger.Debug("Success: " + str)
-	t.backlog = t.backlog[:0]
-	return nil
 
+	return json.Unmarshal(body, result)
 }
 
-func (t *TodoistAPI) update(Type string, args map[string]interface{}) error {
-	t.create(Type, args, "")
-	return nil
-}
-
-func (t *TodoistAPI) create(Type string, args map[string]interface{}, TempID string) error {
-	t.backlog = append(t.backlog, Request{Type: Type, UUID: uuid.New().String(), Args: args, TempID: TempID})
-	return nil
-}
-
-func (t *TodoistAPI) Sync() (*Response, error) {
-	form := url.Values{}
-	form.Add("sync_token", t.synctoken)
-	form.Add("resource_types", `["all"]`)
-
-	req, err := http.NewRequest("POST", APIURL, strings.NewReader(form.Encode()))
+func (t *TodoistAPI) doPost(path string, payload interface{}, result interface{}) error {
+	jsonBody, err := json.Marshal(payload)
 	if err != nil {
-		t.logger.Error(err.Error())
-		return nil, err
+		return err
 	}
-	req.Header.Add("Authorization", "Bearer "+t.Token)
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	req, err := http.NewRequest("POST", APIURL+path, bytes.NewReader(jsonBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+t.Token)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.logger.Error(err.Error())
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
-	str := resp.Status
-	if resp.StatusCode != 200 {
-		t.logger.Error("Error: " + str)
-		return nil, fmt.Errorf("API error: %s", str)
-	}
-	bodyBytes, err := io.ReadAll(resp.Body)
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		t.logger.Error(err.Error())
-		return nil, err
+		return err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("API error %s: %s", resp.Status, string(body))
 	}
 
-	var jsonResponse map[string]interface{}
-	if err := json.Unmarshal(bodyBytes, &jsonResponse); err != nil {
-		t.logger.Error(err.Error())
-		return nil, err
+	if result != nil && len(body) > 0 {
+		return json.Unmarshal(body, result)
 	}
-	var response Response
-	if err := json.Unmarshal(bodyBytes, &response); err != nil {
-		t.logger.Error(err.Error())
-		return nil, err
-	}
-	t.synctoken = response.SyncToken
+	return nil
+}
 
-	return &response, nil
+func (t *TodoistAPI) doPostNoBody(path string) error {
+	req, err := http.NewRequest("POST", APIURL+path, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+t.Token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API error %s: %s", resp.Status, string(body))
+	}
+	return nil
+}
+
+func (t *TodoistAPI) GetTasks() ([]Task, error) {
+	var tasks []Task
+	err := t.doGet("/tasks", &tasks)
+	return tasks, err
+}
+
+func (t *TodoistAPI) GetProjects() ([]Project, error) {
+	var projects []Project
+	err := t.doGet("/projects", &projects)
+	return projects, err
+}
+
+func (t *TodoistAPI) CreateTask(fields map[string]interface{}) (*Task, error) {
+	var task Task
+	err := t.doPost("/tasks", fields, &task)
+	if err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
+func (t *TodoistAPI) UpdateTask(id string, fields map[string]interface{}) error {
+	return t.doPost("/tasks/"+id, fields, nil)
+}
+
+func (t *TodoistAPI) CloseTask(id string) error {
+	return t.doPostNoBody("/tasks/" + id + "/close")
+}
+
+func (t *TodoistAPI) CreateProject(fields map[string]interface{}) (*Project, error) {
+	var project Project
+	err := t.doPost("/projects", fields, &project)
+	if err != nil {
+		return nil, err
+	}
+	return &project, nil
+}
+
+func (t *TodoistAPI) UpdateProject(id string, fields map[string]interface{}) error {
+	return t.doPost("/projects/"+id, fields, nil)
 }

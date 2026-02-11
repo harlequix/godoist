@@ -3,8 +3,6 @@ package godoist
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
 type Manager struct {
@@ -72,55 +70,52 @@ func (t *TaskManager) UpdateTask(task Task) {
 }
 
 func (t *TaskManager) AddTask(task Task) error {
-	if _, exists := t.tasks[task.ID]; exists {
-		return fmt.Errorf("Task with ID %s already exists", task.ID)
+	if task.ID != "" {
+		if _, exists := t.tasks[task.ID]; exists {
+			return fmt.Errorf("Task with ID %s already exists", task.ID)
+		}
 	}
-	if task.ID == "" {
-		task.TempID = uuid.New().String()
-		taskJSON, err := json.Marshal(task)
-		if err != nil {
-			return err
-		}
-		var taskMap map[string]interface{}
-		if err := json.Unmarshal(taskJSON, &taskMap); err != nil {
-			return err
-		}
-		_, err = json.Marshal(task)
-		if err != nil {
-			return err
-		}
-		t.api.create("item_add", cleanRequests(taskMap), task.TempID)
+
+	taskJSON, err := json.Marshal(task)
+	if err != nil {
+		return err
 	}
-	task.manager = t
-	t.tasks[task.ID] = &task
+	var taskMap map[string]interface{}
+	if err := json.Unmarshal(taskJSON, &taskMap); err != nil {
+		return err
+	}
+	// Remove zero/empty values that shouldn't be sent
+	for key, value := range taskMap {
+		if value == nil || value == "" || value == 0.0 {
+			delete(taskMap, key)
+		}
+	}
+
+	created, err := t.api.CreateTask(taskMap)
+	if err != nil {
+		return err
+	}
+
+	created.manager = t
+	t.tasks[created.ID] = created
+	// Update the caller's task with the real ID
+	task.ID = created.ID
 	return nil
 }
 
-func (t *TaskManager) Create(content string) *Task {
+func (t *TaskManager) Create(content string) (*Task, error) {
 	task := Task{Content: content, manager: t}
-	t.AddTask(task)
-	return &task
-}
-
-func cleanRequests(requests map[string]interface{}) map[string]interface{} {
-	for key, value := range requests {
-		if value == nil {
-			delete(requests, key)
-		}
-		if key == "TempID" {
-			delete(requests, key)
-		}
-		if value == "" {
-			delete(requests, key)
-		}
-		if value == 0 {
-			delete(requests, key)
-		}
-		if value == 0.0 {
-			delete(requests, key)
+	err := t.AddTask(task)
+	if err != nil {
+		return nil, err
+	}
+	// Return the task from the map (has real ID from API)
+	for _, stored := range t.tasks {
+		if stored.Content == content {
+			return stored, nil
 		}
 	}
-	return requests
+	return nil, fmt.Errorf("task created but not found in store")
 }
 
 type ProjectManager struct {

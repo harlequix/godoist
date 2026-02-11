@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	"git.rust.cloud/harlequix/godoist"
+	"github.com/harlequix/godoist"
 	"github.com/alecthomas/kong"
 )
 

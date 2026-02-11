@@ -29,13 +29,26 @@ func NewTodoist(token string) *Todoist {
 }
 
 func (t *Todoist) Sync() error {
-	response, err := t.API.Sync()
+	tasks, err := t.API.GetTasks()
 	if err != nil {
 		t.logger.Error(err.Error())
 		return err
 	}
-	t.Tasks.Update(response.Tasks)
-	t.Projects.Update(response.Projects)
+	t.Tasks.Update(tasks)
 
+	projects, err := t.API.GetProjects()
+	if err != nil {
+		t.logger.Error(err.Error())
+		return err
+	}
+	t.Projects.Update(projects)
+
+	return nil
+}
+
+// Commit is a no-op kept for backwards compatibility.
+// The REST API v2 executes operations immediately; there is nothing to commit.
+func (t *Todoist) Commit() error {
+	t.logger.Warn("Commit() is deprecated: REST API v2 executes operations immediately")
 	return nil
 }
