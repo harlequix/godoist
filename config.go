@@ -32,7 +32,7 @@ func (config Config) Merge(other *Config) {
 func defaultConfig() *Config {
 	return &Config{
 		Token:   "",
-		ApiURL:  "https://api.todoist.com/rest/v2",
+		ApiURL:  "https://api.todoist.com/api/v1",
 		Timeout: 30,
 		Debug:   false,
 	}

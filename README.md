@@ -1,6 +1,6 @@
 # godoist
 
-A Go client library for the [Todoist REST API v2](https://developer.todoist.com/rest/v2).
+A Go client library for the [Todoist API v1](https://developer.todoist.com/api/v1/).
 
 ## Install
 

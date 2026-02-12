@@ -47,8 +47,8 @@ func (t *Todoist) Sync() error {
 }
 
 // Commit is a no-op kept for backwards compatibility.
-// The REST API v2 executes operations immediately; there is nothing to commit.
+// The API v1 executes operations immediately; there is nothing to commit.
 func (t *Todoist) Commit() error {
-	t.logger.Warn("Commit() is deprecated: REST API v2 executes operations immediately")
+	t.logger.Warn("Commit() is deprecated: API v1 executes operations immediately")
 	return nil
 }

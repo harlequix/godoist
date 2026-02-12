@@ -22,6 +22,11 @@ type Due struct {
 	ParsedDate  time.Time `json:"-"`
 }
 
+type Duration struct {
+	Amount int    `json:"amount"`
+	Unit   string `json:"unit"` // "minute" or "day"
+}
+
 func (d *Due) UnmarshalJSON(data []byte) error {
 	type Alias Due
 	aux := &struct {
@@ -79,14 +84,20 @@ type Task struct {
 	Description string         `json:"description"`
 	ProjectID   string         `json:"project_id"`
 	SectionID   string         `json:"section_id"`
-	Order       int            `json:"order"`
+	ChildOrder  int            `json:"child_order"`
 	Priority    PRIORITY_LEVEL `json:"priority"`
 	Deadline    *Deadline      `json:"deadline"`
 	Due         *Due           `json:"due"`
+	Duration    *Duration      `json:"duration"`
 	ParentID    string         `json:"parent_id"`
 	Labels      []string       `json:"labels"`
-	IsCompleted bool           `json:"is_completed"`
-	CreatedAt   string         `json:"created_at"`
+	Checked     bool           `json:"checked"`
+	AddedAt     string         `json:"added_at"`
+	UpdatedAt   string         `json:"updated_at"`
+	CompletedAt string         `json:"completed_at"`
+	NoteCount   int            `json:"note_count"`
+	DayOrder    int            `json:"day_order"`
+	IsCollapsed bool           `json:"is_collapsed"`
 	URL         string         `json:"url"`
 	manager     *TaskManager   `json:"-"`
 }
@@ -162,14 +173,16 @@ func (t *Task) Update(key string, value interface{}) error {
 		t.ProjectID = value.(string)
 	case "section_id", "SectionID":
 		t.SectionID = value.(string)
-	case "order", "Order":
-		t.Order = value.(int)
+	case "child_order", "ChildOrder":
+		t.ChildOrder = value.(int)
 	case "priority", "Priority":
 		t.Priority = value.(PRIORITY_LEVEL)
 	case "deadline", "Deadline":
 		t.Deadline = value.(*Deadline)
 	case "due", "Due":
 		t.Due = value.(*Due)
+	case "duration", "Duration":
+		t.Duration = value.(*Duration)
 	case "parent_id", "ParentID":
 		t.ParentID = value.(string)
 	case "labels", "Labels":
@@ -183,4 +196,8 @@ func (t *Task) Update(key string, value interface{}) error {
 
 func (t *Task) Close() error {
 	return t.manager.api.CloseTask(t.ID)
+}
+
+func (t *Task) Reopen() error {
+	return t.manager.api.ReopenTask(t.ID)
 }

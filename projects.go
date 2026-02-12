@@ -8,13 +8,17 @@ type Project struct {
 	Description    string          `json:"description"`
 	Color          string          `json:"color"`
 	ParentID       string          `json:"parent_id"`
-	Order          int             `json:"order"`
+	ChildOrder     int             `json:"child_order"`
 	IsShared       bool            `json:"is_shared"`
-	IsInboxProject bool            `json:"is_inbox_project"`
+	InboxProject   bool            `json:"inbox_project"`
 	IsFavorite     bool            `json:"is_favorite"`
-	URL            string          `json:"url"`
-	CommentCount   int             `json:"comment_count"`
+	IsArchived     bool            `json:"is_archived"`
+	IsCollapsed    bool            `json:"is_collapsed"`
 	ViewStyle      string          `json:"view_style"`
+	DefaultOrder   string          `json:"default_order"`
+	CreatedAt      string          `json:"created_at"`
+	UpdatedAt      string          `json:"updated_at"`
+	URL            string          `json:"url"`
 	Manager        *ProjectManager `json:"-"`
 }
 
@@ -26,6 +30,10 @@ func (p *Project) Update(key string, value interface{}) error {
 		p.Description = value.(string)
 	case "color", "Color":
 		p.Color = value.(string)
+	case "is_favorite", "IsFavorite":
+		p.IsFavorite = value.(bool)
+	case "view_style", "ViewStyle":
+		p.ViewStyle = value.(string)
 	default:
 		return errors.New("unknown/unsupported Update")
 	}

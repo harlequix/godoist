@@ -11,8 +11,14 @@ import (
 )
 
 var (
-	APIURL = "https://api.todoist.com/rest/v2"
+	APIURL = "https://api.todoist.com/api/v1"
 )
+
+// paginatedResponse is the envelope returned by API v1 list endpoints.
+type paginatedResponse struct {
+	Results    json.RawMessage `json:"results"`
+	NextCursor *string         `json:"next_cursor"`
+}
 
 type TodoistAPI struct {
 	Token  string
@@ -47,6 +53,66 @@ func (t *TodoistAPI) doGet(path string, result interface{}) error {
 	}
 
 	return json.Unmarshal(body, result)
+}
+
+// doGetPaginated fetches all pages from a paginated list endpoint and
+// collects every result into a single JSON array that is unmarshalled
+// into result.
+func (t *TodoistAPI) doGetPaginated(path string, result interface{}) error {
+	var all []json.RawMessage
+	cursor := ""
+
+	for {
+		url := APIURL + path
+		sep := "?"
+		if len(cursor) > 0 {
+			url += sep + "cursor=" + cursor
+		}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+t.Token)
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("API error %s: %s", resp.Status, string(body))
+		}
+
+		var page paginatedResponse
+		if err := json.Unmarshal(body, &page); err != nil {
+			return err
+		}
+
+		// Collect individual items from this page.
+		var items []json.RawMessage
+		if err := json.Unmarshal(page.Results, &items); err != nil {
+			return err
+		}
+		all = append(all, items...)
+
+		if page.NextCursor == nil || *page.NextCursor == "" {
+			break
+		}
+		cursor = *page.NextCursor
+	}
+
+	// Re-encode as a single JSON array and unmarshal into the caller's slice.
+	merged, err := json.Marshal(all)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(merged, result)
 }
 
 func (t *TodoistAPI) doPost(path string, payload interface{}, result interface{}) error {
@@ -104,13 +170,13 @@ func (t *TodoistAPI) doPostNoBody(path string) error {
 
 func (t *TodoistAPI) GetTasks() ([]Task, error) {
 	var tasks []Task
-	err := t.doGet("/tasks", &tasks)
+	err := t.doGetPaginated("/tasks", &tasks)
 	return tasks, err
 }
 
 func (t *TodoistAPI) GetProjects() ([]Project, error) {
 	var projects []Project
-	err := t.doGet("/projects", &projects)
+	err := t.doGetPaginated("/projects", &projects)
 	return projects, err
 }
 
@@ -129,6 +195,10 @@ func (t *TodoistAPI) UpdateTask(id string, fields map[string]interface{}) error 
 
 func (t *TodoistAPI) CloseTask(id string) error {
 	return t.doPostNoBody("/tasks/" + id + "/close")
+}
+
+func (t *TodoistAPI) ReopenTask(id string) error {
+	return t.doPostNoBody("/tasks/" + id + "/reopen")
 }
 
 func (t *TodoistAPI) CreateProject(fields map[string]interface{}) (*Project, error) {

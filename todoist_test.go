@@ -15,17 +15,25 @@ func TestSync(t *testing.T) {
 			return
 		}
 		tasks := []Task{
-			{ID: "1", Content: "Buy milk", ProjectID: "100", Order: 1, Priority: LOW},
-			{ID: "2", Content: "Write tests", ProjectID: "100", Order: 2, Priority: HIGH, Labels: []string{"dev"}},
+			{ID: "1", Content: "Buy milk", ProjectID: "100", ChildOrder: 1, Priority: LOW},
+			{ID: "2", Content: "Write tests", ProjectID: "100", ChildOrder: 2, Priority: HIGH, Labels: []string{"dev"}},
 		}
-		json.NewEncoder(w).Encode(tasks)
+		resp := map[string]interface{}{
+			"results":     tasks,
+			"next_cursor": nil,
+		}
+		json.NewEncoder(w).Encode(resp)
 	})
 	mux.HandleFunc("GET /projects", func(w http.ResponseWriter, r *http.Request) {
 		projects := []Project{
-			{ID: "100", Name: "Inbox", IsInboxProject: true, Order: 0},
-			{ID: "200", Name: "Work", Order: 1},
+			{ID: "100", Name: "Inbox", InboxProject: true, ChildOrder: 0},
+			{ID: "200", Name: "Work", ChildOrder: 1},
 		}
-		json.NewEncoder(w).Encode(projects)
+		resp := map[string]interface{}{
+			"results":     projects,
+			"next_cursor": nil,
+		}
+		json.NewEncoder(w).Encode(resp)
 	})
 
 	srv := httptest.NewServer(mux)
@@ -75,7 +83,60 @@ func TestSync(t *testing.T) {
 	if inbox.Name != "Inbox" {
 		t.Errorf("expected 'Inbox', got %q", inbox.Name)
 	}
-	if !inbox.IsInboxProject {
-		t.Error("expected IsInboxProject to be true")
+	if !inbox.InboxProject {
+		t.Error("expected InboxProject to be true")
+	}
+}
+
+func TestSyncPagination(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /tasks", func(w http.ResponseWriter, r *http.Request) {
+		cursor := r.URL.Query().Get("cursor")
+		var resp map[string]interface{}
+		if cursor == "" {
+			next := "page2"
+			tasks := []Task{
+				{ID: "1", Content: "Task A", ProjectID: "100"},
+			}
+			resp = map[string]interface{}{
+				"results":     tasks,
+				"next_cursor": next,
+			}
+		} else if cursor == "page2" {
+			tasks := []Task{
+				{ID: "2", Content: "Task B", ProjectID: "100"},
+			}
+			resp = map[string]interface{}{
+				"results":     tasks,
+				"next_cursor": nil,
+			}
+		}
+		json.NewEncoder(w).Encode(resp)
+	})
+	mux.HandleFunc("GET /projects", func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]interface{}{
+			"results":     []Project{{ID: "100", Name: "Inbox"}},
+			"next_cursor": nil,
+		}
+		json.NewEncoder(w).Encode(resp)
+	})
+
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	orig := APIURL
+	APIURL = srv.URL
+	defer func() { APIURL = orig }()
+
+	td := NewTodoist("test-token")
+	if err := td.Sync(); err != nil {
+		t.Fatalf("Sync() returned error: %v", err)
+	}
+
+	if td.Tasks.Len() != 2 {
+		t.Fatalf("expected 2 tasks after pagination, got %d", td.Tasks.Len())
+	}
+	if td.Tasks.Get("1") == nil || td.Tasks.Get("2") == nil {
+		t.Fatal("expected both tasks to be present after paginating")
 	}
 }
