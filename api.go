@@ -63,10 +63,9 @@ func (t *TodoistAPI) doGetPaginated(path string, result interface{}) error {
 	cursor := ""
 
 	for {
-		url := APIURL + path
-		sep := "?"
+		url := APIURL + path + "?limit=200"
 		if len(cursor) > 0 {
-			url += sep + "cursor=" + cursor
+			url += "&cursor=" + cursor
 		}
 
 		req, err := http.NewRequest("GET", url, nil)

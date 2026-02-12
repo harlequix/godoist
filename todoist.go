@@ -3,6 +3,7 @@ package godoist
 import (
 	"log/slog"
 	"os"
+	"sync"
 )
 
 type Todoist struct {
@@ -29,20 +30,36 @@ func NewTodoist(token string) *Todoist {
 }
 
 func (t *Todoist) Sync() error {
-	tasks, err := t.API.GetTasks()
-	if err != nil {
-		t.logger.Error(err.Error())
-		return err
+	var (
+		tasks    []Task
+		projects []Project
+		taskErr  error
+		projErr  error
+		wg       sync.WaitGroup
+	)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		tasks, taskErr = t.API.GetTasks()
+	}()
+	go func() {
+		defer wg.Done()
+		projects, projErr = t.API.GetProjects()
+	}()
+	wg.Wait()
+
+	if taskErr != nil {
+		t.logger.Error(taskErr.Error())
+		return taskErr
 	}
+	if projErr != nil {
+		t.logger.Error(projErr.Error())
+		return projErr
+	}
+
 	t.Tasks.Update(tasks)
-
-	projects, err := t.API.GetProjects()
-	if err != nil {
-		t.logger.Error(err.Error())
-		return err
-	}
 	t.Projects.Update(projects)
-
 	return nil
 }
 
