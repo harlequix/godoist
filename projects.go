@@ -15,7 +15,7 @@ type Project struct {
 	IsArchived     bool            `json:"is_archived"`
 	IsCollapsed    bool            `json:"is_collapsed"`
 	ViewStyle      string          `json:"view_style"`
-	DefaultOrder   string          `json:"default_order"`
+	DefaultOrder   int             `json:"default_order"`
 	CreatedAt      string          `json:"created_at"`
 	UpdatedAt      string          `json:"updated_at"`
 	URL            string          `json:"url"`

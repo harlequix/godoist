@@ -26,8 +26,8 @@ func TestSync(t *testing.T) {
 	})
 	mux.HandleFunc("GET /projects", func(w http.ResponseWriter, r *http.Request) {
 		projects := []Project{
-			{ID: "100", Name: "Inbox", InboxProject: true, ChildOrder: 0},
-			{ID: "200", Name: "Work", ChildOrder: 1},
+			{ID: "100", Name: "Inbox", InboxProject: true, ChildOrder: 0, DefaultOrder: 1},
+			{ID: "200", Name: "Work", ChildOrder: 1, DefaultOrder: 2},
 		}
 		resp := map[string]interface{}{
 			"results":     projects,
@@ -85,6 +85,16 @@ func TestSync(t *testing.T) {
 	}
 	if !inbox.InboxProject {
 		t.Error("expected InboxProject to be true")
+	}
+	if inbox.DefaultOrder != 1 {
+		t.Errorf("expected DefaultOrder 1, got %d", inbox.DefaultOrder)
+	}
+	work := td.Projects.Get("200")
+	if work == nil {
+		t.Fatal("project '200' not found")
+	}
+	if work.DefaultOrder != 2 {
+		t.Errorf("expected DefaultOrder 2, got %d", work.DefaultOrder)
 	}
 }
 
