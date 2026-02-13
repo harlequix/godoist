@@ -167,6 +167,26 @@ func (t *TodoistAPI) doPostNoBody(path string) error {
 	return nil
 }
 
+func (t *TodoistAPI) doDelete(path string) error {
+	req, err := http.NewRequest("DELETE", APIURL+path, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+t.Token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("API error %s: %s", resp.Status, string(body))
+	}
+	return nil
+}
+
 func (t *TodoistAPI) GetTasks() ([]Task, error) {
 	var tasks []Task
 	err := t.doGetPaginated("/tasks", &tasks)
@@ -211,4 +231,24 @@ func (t *TodoistAPI) CreateProject(fields map[string]interface{}) (*Project, err
 
 func (t *TodoistAPI) UpdateProject(id string, fields map[string]interface{}) error {
 	return t.doPost("/projects/"+id, fields, nil)
+}
+
+type SyncResponse struct {
+	Items    []Task    `json:"items"`
+	Projects []Project `json:"projects"`
+}
+
+// SyncResources fetches specified resources using the sync endpoint
+func (t *TodoistAPI) SyncResources(resourceTypes []string) (*SyncResponse, error) {
+	payload := map[string]interface{}{
+		"sync_token":     "*",
+		"resource_types": resourceTypes,
+	}
+
+	var syncResp SyncResponse
+	err := t.doPost("/sync", payload, &syncResp)
+	if err != nil {
+		return nil, err
+	}
+	return &syncResp, nil
 }

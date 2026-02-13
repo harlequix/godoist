@@ -16,10 +16,11 @@ import (
 )
 
 type Config struct {
-	Token   string `koanf:"token"`
-	ApiURL  string `koanf:"api_url"`
-	Timeout int    `koanf:"timeout"`
-	Debug   bool   `koanf:"debug"`
+	Token      string `koanf:"token"`
+	ApiURL     string `koanf:"api_url"`
+	Timeout    int    `koanf:"timeout"`
+	Debug      bool   `koanf:"debug"`
+	UseSyncAPI bool   `koanf:"use_sync_api"`
 }
 
 func (config Config) Merge(other *Config) {
@@ -31,10 +32,11 @@ func (config Config) Merge(other *Config) {
 
 func defaultConfig() *Config {
 	return &Config{
-		Token:   "",
-		ApiURL:  "https://api.todoist.com/api/v1",
-		Timeout: 30,
-		Debug:   false,
+		Token:      "",
+		ApiURL:     "https://api.todoist.com/api/v1",
+		Timeout:    30,
+		Debug:      false,
+		UseSyncAPI: false,
 	}
 }
 

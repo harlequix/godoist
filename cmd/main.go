@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/harlequix/godoist"
 	"github.com/alecthomas/kong"
+	"github.com/harlequix/godoist"
 )
 
 type loginCmd struct {

@@ -3,23 +3,23 @@ package godoist
 import "errors"
 
 type Project struct {
-	ID             string          `json:"id"`
-	Name           string          `json:"name"`
-	Description    string          `json:"description"`
-	Color          string          `json:"color"`
-	ParentID       string          `json:"parent_id"`
-	ChildOrder     int             `json:"child_order"`
-	IsShared       bool            `json:"is_shared"`
-	InboxProject   bool            `json:"inbox_project"`
-	IsFavorite     bool            `json:"is_favorite"`
-	IsArchived     bool            `json:"is_archived"`
-	IsCollapsed    bool            `json:"is_collapsed"`
-	ViewStyle      string          `json:"view_style"`
-	DefaultOrder   int             `json:"default_order"`
-	CreatedAt      string          `json:"created_at"`
-	UpdatedAt      string          `json:"updated_at"`
-	URL            string          `json:"url"`
-	Manager        *ProjectManager `json:"-"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Description  string          `json:"description"`
+	Color        string          `json:"color"`
+	ParentID     string          `json:"parent_id"`
+	ChildOrder   int             `json:"child_order"`
+	IsShared     bool            `json:"is_shared"`
+	InboxProject bool            `json:"inbox_project"`
+	IsFavorite   bool            `json:"is_favorite"`
+	IsArchived   bool            `json:"is_archived"`
+	IsCollapsed  bool            `json:"is_collapsed"`
+	ViewStyle    string          `json:"view_style"`
+	DefaultOrder int             `json:"default_order"`
+	CreatedAt    string          `json:"created_at"`
+	UpdatedAt    string          `json:"updated_at"`
+	URL          string          `json:"url"`
+	Manager      *ProjectManager `json:"-"`
 }
 
 func (p *Project) Update(key string, value interface{}) error {
