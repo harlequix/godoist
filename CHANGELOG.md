@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.3.4 - 2026-02-13
+#### Miscellaneous Chores
+- (**version**) v0.3.3 - (fc94bc8) - Sebastian Rust
+
+- - -
+
 ## v0.3.3 - 2026-02-13
 #### Features
 - (**context**) added context retrieval for todoist tasks - (9c965f9) - Sebastian Rust
