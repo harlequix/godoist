@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var (
@@ -63,7 +64,11 @@ func (t *TodoistAPI) doGetPaginated(path string, result interface{}) error {
 	cursor := ""
 
 	for {
-		url := APIURL + path + "?limit=200"
+		sep := "?"
+		if strings.Contains(path, "?") {
+			sep = "&"
+		}
+		url := APIURL + path + sep + "limit=200"
 		if len(cursor) > 0 {
 			url += "&cursor=" + cursor
 		}

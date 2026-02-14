@@ -31,7 +31,7 @@ func (api *TodoistAPI) CreateComment(taskID, content string) (*Comment, error) {
 // GetComments retrieves all comments for a task
 func (api *TodoistAPI) GetComments(taskID string) ([]Comment, error) {
 	var comments []Comment
-	err := api.doGet("/comments?task_id="+taskID, &comments)
+	err := api.doGetPaginated("/comments?task_id="+taskID, &comments)
 	return comments, err
 }
 
