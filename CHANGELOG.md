@@ -2,6 +2,32 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.1.0 - 2026-03-08
+#### Features
+- (**api**) implemented move - (ce739b2) - Sebastian Rust
+- (**context**) added context retrieval for todoist tasks - (9c965f9) - Sebastian Rust
+- port from Todoist REST API v2 to API v1 - (f4a9d46) - Sebastian Rust
+- port from Todoist Sync API v9 to REST API v2 - (e5fe076) - Sebastian Rust
+#### Bug Fixes
+- (**api**) use paginated responses for comments endpoint - (5ceef45) - Sebastian Rust
+- (**cog**) sfd - (1c8ee77) - Sebastian Rust
+- (**cog**) moved back - (7f80a31) - Sebastian Rust
+- (**cog**) updated cog config - (360861c) - Sebastian Rust
+- (**rework**) deleted old folder - (131b3a6) - Sebastian Rust
+- use int type for Project.DefaultOrder to match API response - (2271739) - Sebastian Rust
+#### Performance Improvements
+- parallelize Sync and increase page size to 200 - (98f7a0e) - Sebastian Rust
+#### Documentation
+- add README with usage example - (13b4e5d) - Sebastian Rust
+#### Tests
+- add Sync integration test with mock server - (8ddbf47) - Sebastian Rust
+#### Miscellaneous Chores
+- (**cog**) move cog file - (d7690fc) - Sebastian Rust
+- (**version**) v0.3.3 - (fc94bc8) - Sebastian Rust
+- (**version**) v0.4.0 - (0da9691) - Sebastian Rust
+
+- - -
+
 ## v0.3.3 - 2026-02-13
 #### Features
 - (**context**) added context retrieval for todoist tasks - (9c965f9) - Sebastian Rust
